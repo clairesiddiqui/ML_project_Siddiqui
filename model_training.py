@@ -10,7 +10,7 @@
 
 import pandas as pd
 import numpy as np
-#from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import LinearRegression
@@ -31,7 +31,7 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.tree import plot_tree
 
 from sklearn.svm import SVR
-import shap
+#import shap
 import matplotlib.pyplot as plt
 from pylab import plot,show
 #import pdb; pdb.set_trace()
@@ -39,37 +39,50 @@ from pylab import plot,show
 
 
 
-#======================== Data Import ========================#
+#======================== MODEL TRAINING ========================#
 
+# import data:
 masterfile = "/Users/csi/private/Data_Scientist/Digethic/Python_coding/DIGETHIC_import_datafile.csv"
-
 with open(masterfile, 'r') as nf:
     carbon_data = np.genfromtxt(masterfile, dtype=None, delimiter='\t', skip_header=0)
     nn = len(carbon_data)
     carbon_data = carbon_data.astype(float)
-
-print(carbon_data)
-
+print(np.shape(carbon_data))  # shape: 34734, 22
 
 
+# create dataframe:
+carbon_df = pd.DataFrame(carbon_data, columns = ['year', 'month', 'day', 'hour','minute','latitude','longitude', 'depth', 
+                'pCO2', 'temperature', 'salinity', 'air_pressure', 'wind_speed', 'alkalinity', 'xx', 'yy', 'modis_latitude',
+                'modis_longitude', 'CHL', 'SST', 'KD490', 'PAR'])
+
+carbon_df = carbon_df.dropna()
+print("length data file:", len(carbon_df))    # before: 34734, after: 12799
+
+
+# split data into test- and training-datasets:
+feature_cols = ['CHL', 'SST', 'KD490', 'PAR']
+X = carbon_df[feature_cols]   # Features
+y = carbon_df['pCO2']         # Target variable
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
+
+print('X Train: {}'.format(X_train.shape)) #X Train: (8959, 4)
+print('Y Train: {}'.format(y_train.shape)) #Y Train: (8959,)
+print('X Test:  {}'.format(X_test.shape))  #X Test:  (3840, 4)
+print('Y Test:  {}'.format(y_test.shape))  #Y Test:  (3840,)
 
 
 
 
+'========================='
+# Logistic Regression
+log_reg = LogisticRegression(random_state=0)
+predictions_log_reg = log_reg.fit(X_train, y_train).predict(X_test)
+accuracy_log_reg = accuracy_score(y_test, predictions_log_reg)
+accuracy_log_reg = round(accuracy_log_reg, 2)
+print("Logistic Regression:", predictions_log_reg)
+print("accuracy:", accuracy_log_reg)
+print(" ")
 
-#census = pd.DataFrame(census, columns = ['age', 'workclass', 'education', 'marital-status','occupation','relationship','race', 'sex', 'capital-gain',
-#                'capital-loss', 'hours-per-week', 'native-country', 'target'])
 
 
-# SPLIT DATA INTO TEST- AND TRAINING-DATASETS
-#feature_cols = ['age', 'workclass', 'education', 'marital-status','occupation','relationship','race', 'sex', 'capital-gain',
-#                'capital-loss', 'hours-per-week', 'native-country']
-#X = census[feature_cols]   # Features
-#y = census['target']       # Target variable
-
-#X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
-
-#print('X Train: {}'.format(X_train.shape)) #X Train: (22792, 13)
-#print('Y Train: {}'.format(y_train.shape)) #Y Train: (22792,)
-#print('X Test:  {}'.format(X_test.shape))  #X Test:  (9769, 13)
-#print('Y Test:  {}'.format(y_test.shape))  #Y Test:  (9769,)
