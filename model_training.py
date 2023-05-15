@@ -74,15 +74,50 @@ print('Y Test:  {}'.format(y_test.shape))  #Y Test:  (3840,)
 
 
 
+
+
 '========================='
-# Logistic Regression
-log_reg = LogisticRegression(random_state=0)
-predictions_log_reg = log_reg.fit(X_train, y_train).predict(X_test)
-accuracy_log_reg = accuracy_score(y_test, predictions_log_reg)
-accuracy_log_reg = round(accuracy_log_reg, 2)
-print("Logistic Regression:", predictions_log_reg)
-print("accuracy:", accuracy_log_reg)
+# Linear Regression
+poly = PolynomialFeatures(2)
+x_poly = poly.fit_transform(X_train)
+lin_reg = LinearRegression()
+predictions_lin_reg = lin_reg.fit(x_poly, y_train).predict(poly.transform(X_test))
+importances_lin_reg = lin_reg.coef_
+print("Linear Regression:", predictions_lin_reg)
+print("importances:", importances_lin_reg)
 print(" ")
+#accuracy_lin_reg = accuracy_score(y_test, predictions_lin_reg)
+#accuracy_lin_reg = round(accuracy_lin_reg, 2)
+#print("accuracy:", accuracy_lin_reg)
+
+
+
+# Random Forrest Regressor
+
+
+
+# Gradient Boosting Regressor
+
+
+
+# CatBoost Regressor
+
+
+
+'========================='
+# Support Vector Machine
+svm_lin = SVR(kernel="rbf", C=100, gamma=0.1, epsilon=0.1)
+predictions_svm_lin = svm_lin.fit(X_train, y_train).predict(X_test)
+#accuracy_svm_lin = accuracy_score(y_test, predictions_svm_lin)
+#accuracy_svm_lin = round(accuracy_svm_lin,2)
+print("Support Vector Machine:", predictions_svm_lin)
+#print("accuracy:", accuracy_svm_lin)
+print(" ")
+
+
+# accuracy score only applicable with classifications
+
+
 
 
 
