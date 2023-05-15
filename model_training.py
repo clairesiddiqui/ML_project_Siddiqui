@@ -119,5 +119,15 @@ print(" ")
 
 
 
+# PLOTTING DATASET
+fig1, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 4))
 
+# temperature and SST
+#ax.scatter(y=predictions_svm_lin, x=y_test)
+ax.scatter(y=predictions_lin_reg, x=y_test)
+ax.set_xlabel('measured')
+ax.set_ylabel('predicted')
+ax.set_xlim(300,500)
+ax.set_ylim(300,500)
+plt.show()
 
