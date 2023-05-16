@@ -16,7 +16,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier, GradientBoostingRegressor, RandomForestRegressor, VotingRegressor
 from sklearn.ensemble import AdaBoostClassifier
 
 
@@ -57,6 +57,10 @@ carbon_df = pd.DataFrame(carbon_data, columns = ['year', 'month', 'day', 'hour',
 
 carbon_df = carbon_df.dropna()
 print("length data file:", len(carbon_df))    # before: 34734, after: 12799
+carbon_df['SST'] = carbon_df['SST'] / 0.005
+carbon_df['KD490'] = carbon_df['KD490'] / 0.0002
+carbon_df['PAR'] = (carbon_df['PAR'] / 0.002) - 65.5
+
 
 
 # split data into test- and training-datasets:
@@ -92,12 +96,21 @@ print(" ")
 
 
 
-# Random Forrest Regressor
-
+# Random Forest Regressor
+random_f_r = RandomForestRegressor(random_state=1)
+predictions_rfr = random_f_r.fit(X_train, y_train).predict(X_test)
+print("Random Forest Regressor:", predictions_rfr)
 
 
 # Gradient Boosting Regressor
+gradient_b_r = GradientBoostingRegressor(random_state=1)
+predictions_gbr = gradient_b_r.fit(X_train, y_train).predict(X_test)
+print("Gradient Boosting Regressor:", predictions_gbr)
 
+
+# Voting Regressor
+#voting_r = VotingRegressor(estimators= [('rf', random_f_r), ('gbr', gradient_b_r), ('lr', lin_reg)])
+#predictions_vr = voting_r.fit(X_train, y_train).predict(X_test)
 
 
 # CatBoost Regressor
@@ -107,6 +120,8 @@ print(" ")
 '========================='
 # Support Vector Machine
 svm_lin = SVR(kernel="rbf", C=100, gamma=0.1, epsilon=0.1)
+#svm_lin = SVR(kernel="poly", C=100, gamma="auto", degree=3, epsilon=0.1)
+#svm_lin = SVR(kernel="linear", C=100, gamma="auto")
 predictions_svm_lin = svm_lin.fit(X_train, y_train).predict(X_test)
 #accuracy_svm_lin = accuracy_score(y_test, predictions_svm_lin)
 #accuracy_svm_lin = round(accuracy_svm_lin,2)
@@ -115,19 +130,38 @@ print("Support Vector Machine:", predictions_svm_lin)
 print(" ")
 
 
-# accuracy score only applicable with classifications
+
 
 
 
 # PLOTTING DATASET
-fig1, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 4))
+fig1, ax = plt.subplots(nrows=2, ncols=2, figsize=(8, 4))
 
 # temperature and SST
 #ax.scatter(y=predictions_svm_lin, x=y_test)
-ax.scatter(y=predictions_lin_reg, x=y_test)
-ax.set_xlabel('measured')
-ax.set_ylabel('predicted')
-ax.set_xlim(300,500)
-ax.set_ylim(300,500)
+ax[0,0].scatter(y=predictions_lin_reg, x=y_test)
+ax[0,0].set_xlabel('measured')
+ax[0,0].set_ylabel('predicted - lr')
+ax[0,0].set_xlim(300,500)
+ax[0,0].set_ylim(300,500)
+
+ax[0,1].scatter(y=predictions_rfr, x=y_test)
+ax[0,1].set_xlabel('measured')
+ax[0,1].set_ylabel('predicted - rfr')
+ax[0,1].set_xlim(300,500)
+ax[0,1].set_ylim(300,500)
+
+ax[1,0].scatter(y=predictions_gbr, x=y_test)
+ax[1,0].set_xlabel('measured')
+ax[1,0].set_ylabel('predicted - gbr')
+ax[1,0].set_xlim(300,500)
+ax[1,0].set_ylim(300,500)
+
+ax[1,1].scatter(y=predictions_svm_lin, x=y_test)
+ax[1,1].set_xlabel('measured')
+ax[1,1].set_ylabel('predicted - svm')
+ax[1,1].set_xlim(300,500)
+ax[1,1].set_ylim(300,500)
+
 plt.show()
 
