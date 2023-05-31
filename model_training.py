@@ -12,9 +12,6 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import mean_absolute_error
-
 
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
@@ -24,10 +21,14 @@ from sklearn.svm import SVR
 from sklearn import neighbors
 from sklearn.neighbors import KNeighborsRegressor
 
-
 from sklearn.tree import plot_tree
 from sklearn import tree
 from sklearn.inspection import permutation_importance
+
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import r2_score
+from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_squared_error
 
 #import shap
 import matplotlib.pyplot as plt
@@ -69,8 +70,8 @@ carbon_df['PAR'] = (carbon_df['PAR'] / 0.002) - 65.5
 
 
 # split data into test- and training-datasets:
-#feature_cols = ['CHL', 'SST', 'KD490', 'PAR']
-feature_cols = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude']
+feature_cols = ['CHL', 'SST', 'KD490', 'PAR']
+#feature_cols = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude']
 X = carbon_df[feature_cols]   # Features
 y = carbon_df['pCO2']         # Target variable
 
@@ -80,6 +81,24 @@ print('X Train: {}'.format(X_train.shape)) #X Train: (8959, 4)
 print('Y Train: {}'.format(y_train.shape)) #Y Train: (8959,)
 print('X Test:  {}'.format(X_test.shape))  #X Test:  (3840, 4)
 print('Y Test:  {}'.format(y_test.shape))  #Y Test:  (3840,)
+
+
+# Export training- and testing dataset
+training_data = np.column_stack((X_train, y_train))
+training_file = "DIGETHIC_training_dataset.csv" 
+np.savetxt(training_file, training_data, delimiter = '\t')
+
+testing_data = np.column_stack((X_test, y_test))
+testing_file = "DIGETHIC_testing_dataset.csv" 
+np.savetxt(testing_file, testing_data, delimiter = '\t')
+
+
+
+
+# Load Testing- and Trainingdataset
+# --> remember to first make sure all feature columns were used when generating the ultimate files!
+#     (to make sure same inputs were used when taking latitude & longitude into account)
+
 
 
 # apply standard scaler on input variables
@@ -99,7 +118,8 @@ X_test  = scaler.transform(X_test)
 poly = PolynomialFeatures(3)
 x_poly = poly.fit_transform(X_train)
 lin_reg = LinearRegression()
-predictions_lin_reg = lin_reg.fit(x_poly, y_train).predict(poly.transform(X_test))
+#predictions_lin_reg = lin_reg.fit(x_poly, y_train).predict(poly.transform(X_test))
+predictions_lin_reg = lin_reg.fit(X_train, y_train).predict(X_test)
 importances_lin_reg = lin_reg.coef_
 print("Linear Regression:", predictions_lin_reg)
 print("importances:", importances_lin_reg)
@@ -127,24 +147,24 @@ importances_rfr = random_f_r.feature_importances_
 
 '======================='
 # Support Vector Machine
-svm_lin = SVR(kernel="rbf", C=100, gamma=0.1, epsilon=0.1)
+svm = SVR(kernel="rbf", C=100, gamma=0.1, epsilon=0.1)
 #svm_lin = SVR(kernel="poly", C=100, gamma="auto", degree=3, epsilon=0.1)
 #svm_lin = SVR(kernel="linear", C=100, gamma="auto")
-predictions_svm_lin = svm_lin.fit(X_train, y_train).predict(X_test)
+predictions_svm = svm.fit(X_train, y_train).predict(X_test)
 #accuracy_svm_lin = accuracy_score(y_test, predictions_svm_lin)
 #accuracy_svm_lin = round(accuracy_svm_lin,2)
-print("Support Vector Machine:", predictions_svm_lin)
+print("Support Vector Machine:", predictions_svm)
 #print("accuracy:", accuracy_svm_lin)
 print(" ")
-perm_importance = permutation_importance(svm_lin, X_test, y_test)
-print("Shape:", np.shape(perm_importance), perm_importance)
 
-feature_names = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude']
-features = np.array(feature_names)
-sorted_idx = perm_importance.importances_mean.argsort()
-plt.barh(features[sorted_idx], perm_importance.importances_mean[sorted_idx])
-plt.xlabel("Permutation Importance")
-plt.show()
+#perm_importance = permutation_importance(svm_lin, X_test, y_test)
+#print("Shape:", np.shape(perm_importance), perm_importance)
+#feature_names = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude']
+#features = np.array(feature_names)
+#sorted_idx = perm_importance.importances_mean.argsort()
+#plt.barh(features[sorted_idx], perm_importance.importances_mean[sorted_idx])
+#plt.xlabel("Permutation Importance")
+#plt.show()
 
 '============================'
 # Gradient Boosting Regressor
@@ -176,18 +196,60 @@ print("K-Nearest Neighbor Regressor:", predictions_knn)
 
 #======================== MODEL EVALUATION ========================#
 
-#ex = shap.TreeExplainer(dtr)
-#shap_values_dtr = ex.shap_values(X_test)
-#shap.summary_plot(shap_values_dtr, X_test)
+'============================='
+# Coefficient of Determination
+lin_reg_r2 = r2_score(y_test, predictions_lin_reg)
+dtr_r2     = r2_score(y_test, predictions_dtr)
+rfr_r2     = r2_score(y_test, predictions_rfr)
+svm_r2     = r2_score(y_test, predictions_svm)
+gbr_r2     = r2_score(y_test, predictions_gbr)
+knn_r2     = r2_score(y_test, predictions_knn)
 
-# error estimation, Mean Absolute Error:
-#mean_absolute_error(y_true=,y_pred=)
 
-left = [1,2,3,4,5,6]
+'===================='
+# Mean Absolute Error
+lin_reg_mae = mean_absolute_error(y_true= y_test,y_pred= predictions_lin_reg)
+dtr_mae     = mean_absolute_error(y_true= y_test,y_pred= predictions_dtr)
+rfr_mae     = mean_absolute_error(y_true= y_test,y_pred= predictions_rfr)
+svm_mae     = mean_absolute_error(y_true= y_test,y_pred= predictions_svm)
+gbr_mae     = mean_absolute_error(y_true= y_test,y_pred= predictions_gbr)
+knn_mae     = mean_absolute_error(y_true= y_test,y_pred= predictions_knn)
+
+
+'========================'
+# Root Mean Squared Error
+lin_reg_rmse = mean_squared_error(y_test, predictions_lin_reg, squared=False)
+dtr_rmse     = mean_squared_error(y_test, predictions_dtr, squared=False)
+rfr_rmse     = mean_squared_error(y_test, predictions_rfr, squared=False)
+svm_rmse     = mean_squared_error(y_test, predictions_svm, squared=False)
+gbr_rmse     = mean_squared_error(y_test, predictions_gbr, squared=False)
+knn_rmse     = mean_squared_error(y_test, predictions_knn, squared=False)
+
+
+print("===============================") 
+print("Model Evaluation: R2, MAE, RMSE")
+print("===============================")
+print("lin reg:", lin_reg_r2, lin_reg_mae, lin_reg_rmse)
+print("dtr:", dtr_r2, dtr_mae, dtr_rmse)
+print("rfr:", rfr_r2, rfr_mae, rfr_rmse)
+print("svm:", svm_r2, svm_mae, svm_rmse)
+print("gbr:", gbr_r2, gbr_mae, gbr_rmse)
+print("knn:", knn_r2, knn_mae, knn_rmse)
+
+
+
+
+#======================== RESULT GRAPHICS ========================#
+
+
+#left = [1,2,3,4,5,6]
+#left = [1,2,3,4]
+left = [1,2,3,4,5]
 height_dtr = importances_dtr
 height_rfr = importances_rfr
 #height_svm = perm_importance #importances_svm
-tick_label = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude']
+#tick_label = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude']
+tick_label = ['CHL', 'SST', 'KD490', 'PAR']
 df = pd.DataFrame({'decision tree': height_dtr, 'random forest': height_rfr}, index = tick_label)
 ax = df.plot.barh(color = {"decision tree": "navy", "random forest": "lightblue"})
 plt.xlabel("Feature")
@@ -218,7 +280,7 @@ ax[1,0].set_ylabel('predicted - gbr')
 ax[1,0].set_xlim(300,500)
 ax[1,0].set_ylim(300,500)
 
-ax[1,1].scatter(y=predictions_svm_lin, x=y_test)
+ax[1,1].scatter(y=predictions_svm, x=y_test)
 ax[1,1].set_xlabel('measured')
 ax[1,1].set_ylabel('predicted - svm')
 ax[1,1].set_xlim(300,500)
