@@ -1,7 +1,7 @@
 #==================================================================#
 # Description:
-# This file is used to apply ML to the data collection based on
-# satellite and shipboard measurements from across the study region
+# This file is used to apply ML to predict sea surface pCO2
+# based on satellite and shipboard measurements
 #==================================================================#
 
 
@@ -10,36 +10,37 @@
 
 import pandas as pd
 import numpy as np
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import mean_absolute_error
+
+
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, VotingClassifier, GradientBoostingRegressor, RandomForestRegressor, VotingRegressor
-from sklearn.ensemble import AdaBoostClassifier
-
-
-from sklearn.metrics import accuracy_score
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.model_selection import train_test_split
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor, VotingRegressor
+from sklearn.svm import SVR
 from sklearn import neighbors
-#from sklearn.neighbors import KNeighborsRegressor
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.neighbors import KNeighborsRegressor
+
+
 from sklearn.tree import plot_tree
 
-from sklearn.svm import SVR
+
 #import shap
 import matplotlib.pyplot as plt
 from pylab import plot,show
+
+
+
 #import pdb; pdb.set_trace()
 
 
 
 
-#======================== MODEL TRAINING ========================#
+#======================== PREPROCESSING ========================#
+
 
 # import data:
 masterfile = "/Users/csi/private/Data_Scientist/Digethic/Python_coding/DIGETHIC_import_datafile.csv"
@@ -56,15 +57,19 @@ carbon_df = pd.DataFrame(carbon_data, columns = ['year', 'month', 'day', 'hour',
                 'modis_longitude', 'CHL', 'SST', 'KD490', 'PAR'])
 
 carbon_df = carbon_df.dropna()
-print("length data file:", len(carbon_df))    # before: 34734, after: 12799
-carbon_df['SST'] = carbon_df['SST'] / 0.005
+print("length data file:", len(carbon_df))           
+# length before: 65563, after: 19635
+
+
+# preprocess satellite data (remove offsets etc. according to the netCDF file's metadata description)
+carbon_df['SST'] = carbon_df['SST'] / 0.005          
 carbon_df['KD490'] = carbon_df['KD490'] / 0.0002
 carbon_df['PAR'] = (carbon_df['PAR'] / 0.002) - 65.5
 
 
-
 # split data into test- and training-datasets:
-feature_cols = ['CHL', 'SST', 'KD490', 'PAR']
+#feature_cols = ['CHL', 'SST', 'KD490', 'PAR']
+feature_cols = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude']
 X = carbon_df[feature_cols]   # Features
 y = carbon_df['pCO2']         # Target variable
 
@@ -76,13 +81,21 @@ print('X Test:  {}'.format(X_test.shape))  #X Test:  (3840, 4)
 print('Y Test:  {}'.format(y_test.shape))  #Y Test:  (3840,)
 
 
+# apply standard scaler on input variables
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test  = scaler.transform(X_test)
 
 
 
 
-'========================='
+
+#======================== MODEL TRAINING ========================#
+
+
+'=================='
 # Linear Regression
-poly = PolynomialFeatures(2)
+poly = PolynomialFeatures(3)
 x_poly = poly.fit_transform(X_train)
 lin_reg = LinearRegression()
 predictions_lin_reg = lin_reg.fit(x_poly, y_train).predict(poly.transform(X_test))
@@ -95,29 +108,21 @@ print(" ")
 #print("accuracy:", accuracy_lin_reg)
 
 
+'========================'
+# Decision Tree Regressor
+dtr = DecisionTreeRegressor()
+predictions_dtr = dtr.fit(X_train, y_train).predict(X_test)
+print("Decision Tree Regressor:", predictions_dtr)
 
+
+'========================'
 # Random Forest Regressor
 random_f_r = RandomForestRegressor(random_state=1)
 predictions_rfr = random_f_r.fit(X_train, y_train).predict(X_test)
 print("Random Forest Regressor:", predictions_rfr)
 
 
-# Gradient Boosting Regressor
-gradient_b_r = GradientBoostingRegressor(random_state=1)
-predictions_gbr = gradient_b_r.fit(X_train, y_train).predict(X_test)
-print("Gradient Boosting Regressor:", predictions_gbr)
-
-
-# Voting Regressor
-#voting_r = VotingRegressor(estimators= [('rf', random_f_r), ('gbr', gradient_b_r), ('lr', lin_reg)])
-#predictions_vr = voting_r.fit(X_train, y_train).predict(X_test)
-
-
-# CatBoost Regressor
-
-
-
-'========================='
+'======================='
 # Support Vector Machine
 svm_lin = SVR(kernel="rbf", C=100, gamma=0.1, epsilon=0.1)
 #svm_lin = SVR(kernel="poly", C=100, gamma="auto", degree=3, epsilon=0.1)
@@ -130,12 +135,45 @@ print("Support Vector Machine:", predictions_svm_lin)
 print(" ")
 
 
+'============================'
+# Gradient Boosting Regressor
+gradient_b_r = GradientBoostingRegressor(random_state=1)
+predictions_gbr = gradient_b_r.fit(X_train, y_train).predict(X_test)
+print("Gradient Boosting Regressor:", predictions_gbr)
 
+
+'============================='
+# K-Nearest Neighbor Regressor
+n_neighbor = 5
+knn = neighbors.KNeighborsRegressor(n_neighbor, weights= "distance")
+predictions_knn = knn.fit(X_train, y_train).predict(X_test)
+print("K-Nearest Neighbor Regressor:", predictions_knn)
+
+
+# Voting Regressor
+#voting_r = VotingRegressor(estimators= [('rf', random_f_r), ('gbr', gradient_b_r), ('lr', lin_reg)])
+#predictions_vr = voting_r.fit(X_train, y_train).predict(X_test)
+
+
+# CatBoost Regressor
+
+
+
+
+
+
+
+#======================== MODEL EVALUATION ========================#
+
+
+
+# error estimation, Mean Absolute Error:
+#mean_absolute_error(y_true=,y_pred=)
 
 
 
 # PLOTTING DATASET
-fig1, ax = plt.subplots(nrows=2, ncols=2, figsize=(8, 4))
+fig1, ax = plt.subplots(nrows=3, ncols=2, figsize=(8, 4))
 
 # temperature and SST
 #ax.scatter(y=predictions_svm_lin, x=y_test)
@@ -162,6 +200,18 @@ ax[1,1].set_xlabel('measured')
 ax[1,1].set_ylabel('predicted - svm')
 ax[1,1].set_xlim(300,500)
 ax[1,1].set_ylim(300,500)
+
+ax[2,0].scatter(y=predictions_knn, x=y_test)
+ax[2,0].set_xlabel('measured')
+ax[2,0].set_ylabel('predicted - knn')
+ax[2,0].set_xlim(300,500)
+ax[2,0].set_ylim(300,500)
+
+ax[2,1].scatter(y=predictions_dtr, x=y_test)
+ax[2,1].set_xlabel('measured')
+ax[2,1].set_ylabel('predicted - dtr')
+ax[2,1].set_xlim(300,800)
+ax[2,1].set_ylim(300,800)
 
 plt.show()
 
