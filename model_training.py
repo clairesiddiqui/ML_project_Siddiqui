@@ -26,7 +26,8 @@ from sklearn.neighbors import KNeighborsRegressor
 
 
 from sklearn.tree import plot_tree
-
+from sklearn import tree
+from sklearn.inspection import permutation_importance
 
 #import shap
 import matplotlib.pyplot as plt
@@ -113,6 +114,7 @@ print(" ")
 dtr = DecisionTreeRegressor()
 predictions_dtr = dtr.fit(X_train, y_train).predict(X_test)
 print("Decision Tree Regressor:", predictions_dtr)
+importances_dtr = dtr.feature_importances_
 
 
 '========================'
@@ -120,6 +122,7 @@ print("Decision Tree Regressor:", predictions_dtr)
 random_f_r = RandomForestRegressor(random_state=1)
 predictions_rfr = random_f_r.fit(X_train, y_train).predict(X_test)
 print("Random Forest Regressor:", predictions_rfr)
+importances_rfr = random_f_r.feature_importances_
 
 
 '======================='
@@ -133,7 +136,15 @@ predictions_svm_lin = svm_lin.fit(X_train, y_train).predict(X_test)
 print("Support Vector Machine:", predictions_svm_lin)
 #print("accuracy:", accuracy_svm_lin)
 print(" ")
+perm_importance = permutation_importance(svm_lin, X_test, y_test)
+print("Shape:", np.shape(perm_importance), perm_importance)
 
+feature_names = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude']
+features = np.array(feature_names)
+sorted_idx = perm_importance.importances_mean.argsort()
+plt.barh(features[sorted_idx], perm_importance.importances_mean[sorted_idx])
+plt.xlabel("Permutation Importance")
+plt.show()
 
 '============================'
 # Gradient Boosting Regressor
@@ -165,11 +176,23 @@ print("K-Nearest Neighbor Regressor:", predictions_knn)
 
 #======================== MODEL EVALUATION ========================#
 
-
+#ex = shap.TreeExplainer(dtr)
+#shap_values_dtr = ex.shap_values(X_test)
+#shap.summary_plot(shap_values_dtr, X_test)
 
 # error estimation, Mean Absolute Error:
 #mean_absolute_error(y_true=,y_pred=)
 
+left = [1,2,3,4,5,6]
+height_dtr = importances_dtr
+height_rfr = importances_rfr
+#height_svm = perm_importance #importances_svm
+tick_label = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude']
+df = pd.DataFrame({'decision tree': height_dtr, 'random forest': height_rfr}, index = tick_label)
+ax = df.plot.barh(color = {"decision tree": "navy", "random forest": "lightblue"})
+plt.xlabel("Feature")
+plt.title("Model interpretation")
+plt.show()
 
 
 # PLOTTING DATASET
