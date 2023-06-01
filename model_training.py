@@ -35,7 +35,6 @@ import matplotlib.pyplot as plt
 from pylab import plot,show
 
 
-
 #import pdb; pdb.set_trace()
 
 
@@ -70,8 +69,8 @@ carbon_df['PAR'] = (carbon_df['PAR'] / 0.002) - 65.5
 
 
 # split data into test- and training-datasets:
-feature_cols = ['CHL', 'SST', 'KD490', 'PAR']
-#feature_cols = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude']
+#feature_cols = ['CHL', 'SST', 'KD490', 'PAR']
+feature_cols = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude']
 X = carbon_df[feature_cols]   # Features
 y = carbon_df['pCO2']         # Target variable
 
@@ -82,6 +81,93 @@ print('Y Train: {}'.format(y_train.shape)) #Y Train: (8959,)
 print('X Test:  {}'.format(X_test.shape))  #X Test:  (3840, 4)
 print('Y Test:  {}'.format(y_test.shape))  #Y Test:  (3840,)
 
+nbus_key_xtrain = np.where(X_train.loc[:,"latitude"] >= (-26)) [0]
+sbus_key_xtrain = np.where(X_train.loc[:,"latitude"] <= (-26)) [0]
+
+#nbus_key_ytrain = np.where(y_train.loc[:,"latitude"] >= (-26)) [0]
+#sbus_key_ytrain = np.where(y_train.loc[:,"latitude"] <= (-26)) [0]
+
+nbus_key_xtest = np.where(X_test.loc[:,"latitude"] >= (-26)) [0]
+sbus_key_xtest = np.where(X_test.loc[:,"latitude"] <= (-26)) [0]
+
+#nbus_key_ytest = np.where(y_test.loc[:,"latitude"] >= (-26)) [0]
+#sbus_key_ytest = np.where(y_test.loc[:,"latitude"] <= (-26)) [0]
+
+print(len(nbus_key_xtest), len(sbus_key_xtest), len(nbus_key_xtrain), len(sbus_key_xtrain))
+print(nbus_key_xtest)
+
+
+
+# Create histograms of the input and target variables
+
+fig, axs = plt.subplots(nrows=5, ncols=2, figsize=(10,6))
+
+"========================================================================"
+axs[0,0].hist(y_train.iloc[nbus_key_xtrain], bins = 20, histtype = 'step', color = "blue")
+axs[0,0].hist(y_train.iloc[sbus_key_xtrain], bins = 20, histtype = 'step', color = "grey")
+axs[0,0].text(-0.15, 1.1, "a)", transform=axs[0,0].transAxes, fontsize = 12, fontweight="bold", va="top", ha="center")
+axs[0,0].set_xlabel("pCO$_2$", color = "black", fontsize = 11)
+axs[0,0].set_ylabel("Frequency", color = "black", fontsize = 11)
+
+axs[0,1].hist(y_test.iloc[nbus_key_xtest], bins = 20, histtype = 'step', color = "blue")
+axs[0,1].hist(y_test.iloc[sbus_key_xtest], bins = 20, histtype = 'step', color = "grey")
+axs[0,1].text(-0.15, 1.1, "b)", transform=axs[0,1].transAxes, fontsize = 12, fontweight="bold", va="top", ha="center")
+axs[0,1].set_xlabel("pCO$_2$", color = "black", fontsize = 11)
+axs[0,1].set_ylabel("Frequency", color = "black", fontsize = 11)
+
+"========================================================================"
+axs[1,0].hist(X_train.iloc[nbus_key_xtrain,0], bins = 20, histtype = 'step', color = "blue")
+axs[1,0].hist(X_train.iloc[sbus_key_xtrain,0], bins = 20, histtype = 'step', color = "grey")
+axs[1,0].text(-0.15, 1.1, "c)", transform=axs[1,0].transAxes, fontsize = 12, fontweight="bold", va="top", ha="center")
+axs[1,0].set_xlabel("Chl", color = "black", fontsize = 11)
+axs[1,0].set_ylabel("Frequency", color = "black", fontsize = 11)
+
+axs[1,1].hist(X_test.iloc[nbus_key_xtest,0], bins = 20, histtype = 'step', color = "blue")
+axs[1,1].hist(X_test.iloc[sbus_key_xtest,0], bins = 20, histtype = 'step', color = "grey")
+axs[1,1].text(-0.15, 1.1, "d)", transform=axs[1,1].transAxes, fontsize = 12, fontweight="bold", va="top", ha="center")
+axs[1,1].set_xlabel("Chl", color = "black", fontsize = 11)
+axs[1,1].set_ylabel("Frequency", color = "black", fontsize = 11)
+
+"========================================================================"
+axs[2,0].hist(X_train.iloc[nbus_key_xtrain,1], bins = 20, histtype = 'step', color = "blue")
+axs[2,0].hist(X_train.iloc[sbus_key_xtrain,1], bins = 20, histtype = 'step', color = "grey")
+axs[2,0].text(-0.15, 1.1, "e)", transform=axs[2,0].transAxes, fontsize = 12, fontweight="bold", va="top", ha="center")
+axs[2,0].set_xlabel("SST", color = "black", fontsize = 11)
+axs[2,0].set_ylabel("Frequency", color = "black", fontsize = 11)
+
+axs[2,1].hist(X_test.iloc[nbus_key_xtest,1], bins = 20, histtype = 'step', color = "blue")
+axs[2,1].hist(X_test.iloc[sbus_key_xtest,1], bins = 20, histtype = 'step', color = "grey")
+axs[2,1].text(-0.15, 1.1, "f)", transform=axs[2,1].transAxes, fontsize = 12, fontweight="bold", va="top", ha="center")
+axs[2,1].set_xlabel("SST", color = "black", fontsize = 11)
+axs[2,1].set_ylabel("Frequency", color = "black", fontsize = 11)
+
+"========================================================================"
+axs[3,0].hist(X_train.iloc[nbus_key_xtrain,2], bins = 20, histtype = 'step', color = "blue")
+axs[3,0].hist(X_train.iloc[sbus_key_xtrain,2], bins = 20, histtype = 'step', color = "grey")
+axs[3,0].text(-0.15, 1.1, "g)", transform=axs[3,0].transAxes, fontsize = 12, fontweight="bold", va="top", ha="center")
+axs[3,0].set_xlabel("KD-490", color = "black", fontsize = 11)
+axs[3,0].set_ylabel("Frequency", color = "black", fontsize = 11)
+
+axs[3,1].hist(X_test.iloc[nbus_key_xtest,2], bins = 20, histtype = 'step', color = "blue")
+axs[3,1].hist(X_test.iloc[sbus_key_xtest,2], bins = 20, histtype = 'step', color = "grey")
+axs[3,1].text(-0.15, 1.1, "h)", transform=axs[3,1].transAxes, fontsize = 12, fontweight="bold", va="top", ha="center")
+axs[3,1].set_xlabel("KD-490", color = "black", fontsize = 11)
+axs[3,1].set_ylabel("Frequency", color = "black", fontsize = 11)
+
+"========================================================================"
+axs[4,0].hist(X_train.iloc[nbus_key_xtrain,3], bins = 20, histtype = 'step', color = "blue")
+axs[4,0].hist(X_train.iloc[sbus_key_xtrain,3], bins = 20, histtype = 'step', color = "grey")
+axs[4,0].text(-0.15, 1.1, "i)", transform=axs[4,0].transAxes, fontsize = 12, fontweight="bold", va="top", ha="center")
+axs[4,0].set_xlabel("PAR", color = "black", fontsize = 11)
+axs[4,0].set_ylabel("Frequency", color = "black", fontsize = 11)
+
+axs[4,1].hist(X_test.iloc[nbus_key_xtest,3], bins = 20, histtype = 'step', color = "blue")
+axs[4,1].hist(X_test.iloc[sbus_key_xtest,3], bins = 20, histtype = 'step', color = "grey")
+axs[4,1].text(-0.15, 1.1, "j)", transform=axs[4,1].transAxes, fontsize = 12, fontweight="bold", va="top", ha="center")
+axs[4,1].set_xlabel("PAR", color = "black", fontsize = 11)
+axs[4,1].set_ylabel("Frequency", color = "black", fontsize = 11)
+
+plt.show()
 
 # Export training- and testing dataset
 training_data = np.column_stack((X_train, y_train))
@@ -99,6 +185,12 @@ np.savetxt(testing_file, testing_data, delimiter = '\t')
 # --> remember to first make sure all feature columns were used when generating the ultimate files!
 #     (to make sure same inputs were used when taking latitude & longitude into account)
 
+feature_cols = ['CHL', 'SST', 'KD490', 'PAR']
+X_train = X_train[feature_cols]
+X_test = X_test[feature_cols]
+
+#y_train = y_train["pCO2"]
+#y_test = y_test["pCO2"]
 
 
 # apply standard scaler on input variables
@@ -157,14 +249,14 @@ print("Support Vector Machine:", predictions_svm)
 #print("accuracy:", accuracy_svm_lin)
 print(" ")
 
-#perm_importance = permutation_importance(svm_lin, X_test, y_test)
-#print("Shape:", np.shape(perm_importance), perm_importance)
-#feature_names = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude']
-#features = np.array(feature_names)
-#sorted_idx = perm_importance.importances_mean.argsort()
-#plt.barh(features[sorted_idx], perm_importance.importances_mean[sorted_idx])
-#plt.xlabel("Permutation Importance")
-#plt.show()
+perm_importance = permutation_importance(svm, X_test, y_test)
+print("Shape:", np.shape(perm_importance), perm_importance)
+feature_names = ['CHL', 'SST', 'KD490', 'PAR']
+features = np.array(feature_names)
+sorted_idx = perm_importance.importances_mean.argsort()
+plt.barh(features[sorted_idx], perm_importance.importances_mean[sorted_idx])
+plt.xlabel("Permutation Importance")
+plt.show()
 
 '============================'
 # Gradient Boosting Regressor
