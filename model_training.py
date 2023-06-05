@@ -68,6 +68,38 @@ carbon_df['KD490'] = carbon_df['KD490'] / 0.0002
 carbon_df['PAR'] = (carbon_df['PAR']  - 65.5) / 0.002
 
 
+# satellite data evaluation:
+sst_r2   = r2_score(carbon_df['temperature'], carbon_df['SST'])
+sst_mae  = mean_absolute_error(y_true= carbon_df['temperature'], y_pred= carbon_df['SST'])
+sst_rmse = mean_squared_error(carbon_df['temperature'], carbon_df['SST'], squared=False)
+
+x_sst = np.linspace(10,28,3)
+y_sst = np.linspace(10,28,3)
+
+sst_eval_1 = 'R$^2$= '+ str('{:.3f}'.format(sst_r2))
+sst_eval_2 = 'MAE= '+ str('{:.3f}'.format(sst_mae))
+sst_eval_3 = 'RMSE= '+ str('{:.3f}'.format(sst_rmse))
+'========================================================'
+fig1, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 4))
+
+sst_1_t = ax.scatter(y=carbon_df['SST'], x=carbon_df['temperature'], s=10, label = sst_eval_1, color = "white")
+sst_2_t = ax.scatter(y=carbon_df['SST'], x=carbon_df['temperature'], s=10, label = sst_eval_2, color = "white")
+sst_3_t = ax.scatter(y=carbon_df['SST'], x=carbon_df['temperature'], s=10, label = sst_eval_3,  color = "darkblue")
+ax.plot(x_sst, y_sst, 'k--', color = "grey",  linewidth = 0.5)
+#ax[0].text(-0.15, 1.1, "a)", transform=ax[0,0].transAxes, fontsize = 12, fontweight="bold", va="top", ha="center")
+ax.set_xlabel('Measured SST [°C]', fontsize = 15)
+ax.set_ylabel('MODIS/Aqua SST [°C]', fontsize = 15)
+ax.tick_params(axis="x", labelsize = 14)
+ax.tick_params(axis="y", labelsize = 14)
+ax.legend(loc = 2, frameon = False, fontsize = 15)
+ax.set_xlim(10,28)
+ax.set_ylim(10,28)
+
+
+
+
+
+
 # split data into test- and training-datasets:
 #feature_cols = ['CHL', 'SST', 'KD490', 'PAR']
 feature_cols = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude']
@@ -193,7 +225,9 @@ print(np.shape(testing_data))
 training_df = pd.DataFrame(training_data, columns = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude', 'pCO2'])
 testing_df  = pd.DataFrame(testing_data,  columns = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude', 'pCO2'])
 
+# Choose the appropriate model input variables
 feature_cols = ['CHL', 'SST', 'KD490', 'PAR']
+#feature_cols = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude']
 
 X_train = training_df[feature_cols]
 X_test  = testing_df[feature_cols]
@@ -282,16 +316,6 @@ predictions_svm_train = svm.fit(X_train, y_train).predict(X_train)
 print("Support Vector Machine:", predictions_svm)
 print(" ")
 #print("Parameters svm:", svm.get_params())
-
-perm_importance = permutation_importance(svm, X_test, y_test)
-print("Shape:", np.shape(perm_importance), perm_importance)
-feature_names = ['CHL', 'SST', 'KD490', 'PAR']
-features = np.array(feature_names)
-sorted_idx = perm_importance.importances_mean.argsort()
-plt.barh(features[sorted_idx], perm_importance.importances_mean[sorted_idx])
-plt.xlabel("Permutation Importance")
-plt.show()
-
 
 # hyperparameters:
 # https://towardsdatascience.com/hyperparameter-tuning-for-support-vector-machines-c-and-gamma-parameters-6a5097416167
@@ -586,20 +610,33 @@ print("knn:", knn_r2_opt, knn_mae_opt, knn_rmse_opt)
 
 
 #======================== RESULT GRAPHICS ========================#
+#============   Permutation and Feature Importances   ============#
+
+perm_importance_svm = permutation_importance(svm, X_test, y_test)
+perm_importance_knn = permutation_importance(knn, X_test, y_test)
+
+feature_names = ['CHL', 'SST', 'KD490', 'PAR']
+#feature_names = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude']
+features = np.array(feature_names)
+
+df = pd.DataFrame({'svm': perm_importance_svm.importances_mean, 'knn': perm_importance_knn.importances_mean}, index=features)
+ax1 = df.plot.barh(color = {"svm": "navy", "knn": "lightblue"})
+plt.xlabel("Permutation Importance")
+plt.show()
 
 
-#left = [1,2,3,4,5,6]
-#left = [1,2,3,4]
-left = [1,2,3,4,5]
+'============================================'
+importances_dtr = dtr.feature_importances_
+importances_rfr = random_f_r.feature_importances_
+
+left = [1,2,3,4]
 height_dtr = importances_dtr
 height_rfr = importances_rfr
-#height_svm = perm_importance #importances_svm
-#tick_label = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude']
 tick_label = ['CHL', 'SST', 'KD490', 'PAR']
+#tick_label = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude']
 df = pd.DataFrame({'decision tree': height_dtr, 'random forest': height_rfr}, index = tick_label)
 ax = df.plot.barh(color = {"decision tree": "navy", "random forest": "lightblue"})
-plt.xlabel("Feature")
-plt.title("Model interpretation")
+plt.xlabel("Feature Importance")
 plt.show()
 
 
@@ -610,7 +647,9 @@ plt.show()
 
 
 
-# PLOTTING PCO2 PREDICTIONS
+
+'======================================================================'
+#===================   PLOTTING PCO2 PREDICTIONS   ====================#
 
 # Linear regression:
 lin_reg_eval_1_train = 'R$^2$= '+ str('{:.3f}'.format(lin_reg_r2_train))
@@ -666,12 +705,12 @@ gbr_eval_1 = 'R$^2$= '+ str('{:.3f}'.format(gbr_r2_opt))
 gbr_eval_2 = 'MAE= '+ str('{:.3f}'.format(gbr_mae_opt))
 gbr_eval_3 = 'RMSE= '+ str('{:.3f}'.format(gbr_rmse_opt))
 
-
-
 x_eval = np.linspace(300,700,3)
 y_eval = np.linspace(300,700,3)
 
 
+
+'========================================================'
 fig1, ax = plt.subplots(nrows=3, ncols=3, figsize=(8, 4))
 
 lin_reg_1_t = ax[0,0].scatter(y=predictions_lin_reg_train, x=y_train, s=10, label = lin_reg_eval_1_train, color = "white")
@@ -699,7 +738,6 @@ ax[0,1].set_xlim(300,700)
 ax[0,1].set_ylim(300,700)
 
 delta_lin_reg = predictions_lin_reg - y_test
-#ax[0,2].scatter(y=predictions_rfr, x=y_test)
 ax[0,2].hist(delta_lin_reg, bins = 100, histtype = 'step', color = "darkblue")
 ax[0,2].text(-0.15, 1.1, "c)", transform=ax[0,2].transAxes, fontsize = 12, fontweight="bold", va="top", ha="center")
 ax[0,2].set_xlabel('Difference predicted/measured')
@@ -731,7 +769,6 @@ ax[1,1].set_xlim(300,700)
 ax[1,1].set_ylim(300,700)
 
 delta_knn = predictions_knn_opt - y_test
-#ax[0,2].scatter(y=predictions_rfr, x=y_test)
 ax[1,2].hist(delta_knn, bins = 100, histtype = 'step', color = "darkblue")
 ax[1,2].text(-0.15, 1.1, "f)", transform=ax[1,2].transAxes, fontsize = 12, fontweight="bold", va="top", ha="center")
 ax[1,2].set_xlabel('Difference predicted/measured')
@@ -762,13 +799,11 @@ ax[2,1].set_xlim(300,700)
 ax[2,1].set_ylim(300,700)
 
 delta_svm = predictions_svm_opt - y_test
-#ax[0,2].scatter(y=predictions_rfr, x=y_test)
 ax[2,2].hist(delta_svm, bins = 100, histtype = 'step', color = "darkblue")
 ax[2,2].text(-0.15, 1.1, "i)", transform=ax[2,2].transAxes, fontsize = 12, fontweight="bold", va="top", ha="center")
 ax[2,2].set_xlabel('Difference predicted/measured')
 ax[2,2].set_xlim((-50), 50)
 ax[2,2].set_ylabel('Number of points')
-
 
 plt.show()
 
@@ -803,7 +838,6 @@ ax[0,1].set_xlim(300,700)
 ax[0,1].set_ylim(300,700)
 
 delta_dtr = predictions_dtr_opt - y_test
-#ax[0,2].scatter(y=predictions_rfr, x=y_test)
 ax[0,2].hist(delta_dtr, bins = 100, histtype = 'step', color = "darkblue")
 ax[0,2].text(-0.15, 1.1, "c)", transform=ax[0,2].transAxes, fontsize = 12, fontweight="bold", va="top", ha="center")
 ax[0,2].set_title("Histogram of residuals")
@@ -835,7 +869,6 @@ ax[1,1].set_xlim(300,700)
 ax[1,1].set_ylim(300,700)
 
 delta_knn = predictions_knn_opt - y_test
-#ax[0,2].scatter(y=predictions_rfr, x=y_test)
 ax[1,2].hist(delta_knn, bins = 100, histtype = 'step', color = "darkblue")
 ax[1,2].text(-0.15, 1.1, "f)", transform=ax[1,2].transAxes, fontsize = 12, fontweight="bold", va="top", ha="center")
 ax[1,2].set_xlabel('Difference predicted/measured')
@@ -866,7 +899,6 @@ ax[2,1].set_xlim(300,700)
 ax[2,1].set_ylim(300,700)
 
 delta_gbr = predictions_gbr_opt - y_test
-#ax[0,2].scatter(y=predictions_rfr, x=y_test)
 ax[2,2].hist(delta_gbr, bins = 100, histtype = 'step', color = "darkblue")
 ax[2,2].text(-0.15, 1.1, "i)", transform=ax[2,2].transAxes, fontsize = 12, fontweight="bold", va="top", ha="center")
 ax[2,2].set_xlabel('Difference predicted/measured')
