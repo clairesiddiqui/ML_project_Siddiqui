@@ -236,12 +236,16 @@ y_train = training_df['pCO2']
 y_test  = testing_df['pCO2']
 
 
-# apply standard scaler on input variables
+# show correlation of model input variables
+corr = X_train.corr()
+corr.style.background_gradient(cmap='coolwarm')
+#plt.show()
+
+
+# apply standard scaler on model input variables
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test  = scaler.transform(X_test)
-
-
 
 
 
@@ -612,8 +616,8 @@ print("knn:", knn_r2_opt, knn_mae_opt, knn_rmse_opt)
 #======================== RESULT GRAPHICS ========================#
 #============   Permutation and Feature Importances   ============#
 
-perm_importance_svm = permutation_importance(svm, X_test, y_test)
-perm_importance_knn = permutation_importance(knn, X_test, y_test)
+perm_importance_svm = permutation_importance(svm, X_test, y_test, scoring='neg_root_mean_squared_error')
+perm_importance_knn = permutation_importance(knn, X_test, y_test, scoring='neg_root_mean_squared_error')
 
 feature_names = ['CHL', 'SST', 'KD490', 'PAR']
 #feature_names = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude']
@@ -624,6 +628,18 @@ ax1 = df.plot.barh(color = {"svm": "navy", "knn": "lightblue"})
 plt.xlabel("Permutation Importance")
 plt.show()
 
+
+perm_importance_dtr = permutation_importance(dtr, X_test, y_test, scoring='neg_root_mean_squared_error')
+perm_importance_rfr = permutation_importance(random_f_r, X_test, y_test, scoring='neg_root_mean_squared_error')
+
+feature_names = ['CHL', 'SST', 'KD490', 'PAR']
+#feature_names = ['CHL', 'SST', 'KD490', 'PAR', 'latitude', 'longitude']
+features = np.array(feature_names)
+
+df = pd.DataFrame({'decision tree': perm_importance_dtr.importances_mean, 'random forest': perm_importance_rfr.importances_mean}, index=features)
+ax1 = df.plot.barh(color = {"decision tree": "navy", "random forest": "lightblue"})
+plt.xlabel("Permutation Importance")
+plt.show()
 
 '============================================'
 importances_dtr = dtr.feature_importances_
@@ -639,11 +655,6 @@ ax = df.plot.barh(color = {"decision tree": "navy", "random forest": "lightblue"
 plt.xlabel("Feature Importance")
 plt.show()
 
-
-
-
-
-# temperature and SST
 
 
 
